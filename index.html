@@ -1,0 +1,107 @@
+<!DOCTYPE html><html><head> <script type="text/javascript" src="script/jq.js"></script><script type="text/javascript" src="script/jqui.js"></script><!--[if it IE 8]>
+<script type="text/javascript" src="script/json2.js"></script>
+<![endif]-->
+<script>
+var agent=navigator.userAgent;
+if (agent.indexOf('iPhone') != -1 || agent.indexOf('iPad') != -1 || agent.indexOf('Blackberry') != -1 || agent.indexOf('Android') != -1) {
+    window.location.href='mobile.html';
+}
+var notibox,textdiv='textdiv',filediv='filediv',fmode='mode',fmraw='raw',rawf='rawf',filen='file',textn='text',entp='entry',postsend='postsend',txtform='txtform',entt='entrytext',chkbut='chkbut',chkbuted=chkbut+'ed',entbut='entbut',idents='entries',idrsts='responses',tick='tick',ticked=tick+'ed',editt='EDIT',getf='getf',rawt='RAW',gett='GET',delt='DEL',pickt='PICK',upickt='UN'+pickt,addt='add',rstent='rstent',serurl='services',pdbox='pdbox',callutog='callutog',divs={'add':function(){for(var i=0,len=arguments.length;i<len;i++){arg=arguments[i];this[arg.id]=arg}}},togs={'add':function(){for(var i=0,len=arguments.length;i<len;i++){arg=arguments[i];if(!this[arg])this[arg]=false}},'callutog':function(name,cbfunc){return function(){togs.tog(name);if(cbfunc)cbfunc()}},'tog':function(target,value){var tname=checkdef(target,'string')?target:target.attr('id');if(!checkdef(this[tname]))this[tname]=false;return checkdef(value,'boolean')?(this[tname]?true:!(this[tname]=true)):(this[tname]=false)}},msgs={text:{del:'Removing message #"{id}":{0}. {1}'},file:{del:'Deleting file "{id}":{0}. {1}'},get:function(cat,act,id){return this[cat.toLowerCase()][act.toLowerCase()].replace('{id}',id?id:'')}};
+if ( !Array.prototype.forEach ) {
+  Array.prototype.forEach = function(fn, scope) {
+    for(var i = 0, len = this.length; i < len; ++i) 
+      fn.call(scope || this, this[i], i, this)   
+  }}
+if (!String.format) {
+  String.format = function(format) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return format.replace(/{(\d+)}/g, function(match, number) {return typeof args[number] != 'undefined'? args[number]: match})}}
+function getsize($size){
+    var size  = parseFloat($size);
+    var rank =0;
+    var rankchar ='Bytes';
+    while(size>1024){
+size = size/1024;
+rank++}
+    if(rank==1)rankchar='KB';    
+    else if(rank==2)rankchar='MB';    
+    else if(rank==3)rankchar='GB';    
+    return size.toFixed(2)+ ' '+ rankchar}
+  function getdiv(id,proc,dlt){this.id=id;this.div=getid(id);this.proc=procents(proc,this.div,dlt);return this}
+function checkdef(obj,type){	return typeof type==='string'?typeof obj ===type :typeof obj !=='undefined'}
+function checkfunc(obj) { return obj && Object.prototype.toString.call(obj) == '[object Function]';}function toid(elem){return '#'+elem}function tocls(elem){return '.'+elem}
+function getid(elem){return $(toid(arguments.length>1?Array.prototype.join.call(arguments,',#'):elem))}
+function getcls(elem){return $(tocls(arguments.length>1?Array.prototype.join.call(arguments,',.'):elem))}
+function cspan(txt){return $('<span>',{'text':txt,'class':arguments.length>1?Array.prototype.slice.call(arguments, 1).join(' '):null,cls:null})}
+function cediv(entry){return $('<div>',{'class':entp,'id':entry.id})}
+function procrst(entry,msg){return $('<p>',{'text':msg?String.format(msg,entry.status,entry.msg):JSON.stringify(entry)})}
+function proctext(entry){   return cediv(entry).appends($('<p>').appends(cspan(entry.time),cspan(editt,entbut,gett),cspan(delt,entbut,gett),cspan(pickt,entbut,tick)),$('<p>',{'class':entt,'text':entry.text}))}
+function procfile(entry){    return cediv(entry).append($('<p>').appends(cspan(entry.time),cspan(gett,entbut,getf),cspan(delt,entbut,gett),cspan(pickt,entbut,tick),cspan(rawt,entbut,rawf),cspan(entry.name,'fname'),cspan(getsize(entry.size))))}
+function getents(url,divid,msg,cb){var div=divs[divid];if(!togs.tog(div.id,true))$.get(url,function (data) { div.proc(data,msg);if(checkfunc(cb))cb(div);togs[callutog](div.id)()}).fail(function(){div.div.html('Error retrieving data')})}
+function procents(proc,div,dlt){
+	return function(data,msg){
+    data=JSON.parse(data);
+if(data[idrsts])data[idrsts].forEach(
+function(entry)    
+{
+notibox.append(procrst(entry,msg))
+});
+else if(data.status) notibox.append(procrst(data,msg));
+if(data[idents]){var first=true;div.empty();data[idents].forEach(
+function(entry)    
+{
+if(!first&&checkdef(dlt))div.append(dlt);
+div.append(proc(entry));
+first=false
+});
+    }}
+}
+function post(form,msg,cbfunc){var id=form.attr('alt');if(!togs.tog(id,true))$.post(form.attr('action'),form.serialize(),function(data){divs[id].proc(data,msg);notibox.recurshow(null,pdtog);togs[callutog](id)()}).fail(function(){console.log('error post')})}
+function genUrl(sert,action){var actexp;if(checkdef(action,'object')){var first=true;actexp='';for(var key in action) if (action.hasOwnProperty(key)) {actexp+=(first?'':'&')+key.toLowerCase()+'='+action[key];first=false}} if(checkdef(action,'string'))actexp=action.toLowerCase()+'='+Array.prototype.slice.call(arguments, 2).join(',');return [serurl,sert,actexp?'?'+actexp:''].join('/')}
+function pdtog(objs,cbfunc){var acting=false;if(!togs.tog(pdbox,true)){getcls('pdbox').each(function(){var obj=$(this);if(!obj.is(objs)&&obj.is(':visible')){acting=true;obj.slideUp(function(){objs.slideDown(togs[callutog](pdbox,cbfunc))}); return false}}); if(!acting) objs.slideToggle(togs[callutog](pdbox,cbfunc)) }}
+function selall(div){getid(div).each(function(){$(this).click()})}
+$(function() {
+    notibox=getid('notibox');divs.add(new getdiv(textdiv,proctext,'<hr>'),new getdiv(filediv,procfile));
+    $.fn.recurshow=function(cbfunc,showfunc){var holder=$(this),hcallee=arguments.callee;if(!togs.tog(holder,true)){if(!holder.is(':visible')&&showfunc)showfunc(holder,function(){togs[callutog](holder)();hcallee.call(holder);});else holder.children(':first').slideDown(function(){var obj=$(this).next();if(obj.length>0)obj.slideDown(arguments.callee);else {if(cbfunc)cbfunc();togs[callutog](holder)()}})}}
+    $.fn.appends=function(elems){var obj=$(this);for (var i = 0, j = arguments.length; i < j; i++)obj.append(arguments[i]);return obj}
+   getcls(chkbut).click(function(){var obj=$(this),id=$('input[name='+obj.attr('id')+']')[0]; id.checked=!id.checked; if(id.checked)obj.addClass(chkbuted);else obj.removeClass(chkbuted) });
+    getcls('batchpick').click(function(){var obj=$(this);var tval=obj.attr('title');getid(obj.attr('alt')+' '+tocls(tick)).each(function(){var obj=$(this);if((tval!='true')==obj.hasClass(ticked))obj.click()})});
+    getcls('batchtog').click(function(){});
+
+    getcls('pdbtggler').click(function(){pdtog(getid($(this).attr('alt')))});
+    $(document).on('click',tocls(gett),function(){var obj=$(this),cont=obj.closest('div'),holder=cont.parent(),idi=holder.attr('alt'),id=idi.indexOf('#')==0?cont.attr(idi.substring(1)):cont.find(idi).first().text(),bmark=holder.prev('.bookmark').attr('name'),text=obj.text();getents(genUrl(bmark,text,id),holder.attr('id'),msgs.get(bmark,text,id),function(){notibox.recurshow(null,pdtog)})});
+ $(document).on('click',tocls(getf),function(){var obj=$(this).closest('div');location.href=genUrl(filen,gett,obj.find(obj.parent().attr('alt')).first().text())});
+ $(document).on('click',tocls(rawf),function(){var obj=$(this).closest('div');window.open(genUrl(filen,{mode:fmraw,get:obj.find(obj.parent().attr('alt')).first().text()}),'_blank')});
+    $(document).on('click',tocls(tick),function(){var obj=$(this);if(obj.hasClass(ticked)){obj.removeClass(ticked);obj.text(pickt)}else {obj.addClass(ticked);obj.text(upickt)}});
+    getid('upform').find(tocls(postsend)).first().click(function(){});
+    getcls(postsend).click(function(){var obj=$(this).parent(),form=obj.closest('form');if(form.length<1)form=obj.siblings('div').find('form').first();form.submit()});
+    getid(txtform).submit(function(e){e.preventDefault();post($(this),'Posting message:{0}.{1}')});
+	getents(genUrl(textn),textdiv);getents(genUrl(filen),filediv)
+})</script><style> body{margin:0;padding: 0}  #menucts{margin:0 0 0 25px}	iframe[name="uplif"]{display: none}	.butdiv{margin:0 0 0 5px}
+        .butdiv{width:70px;text-align:center; line-height: 50px} .butdiv, .butdiv a, .butdiv a:visited{color:#444}
+		.butdiv,.pdbox{border-right:1px solid #444;border-left:1px solid #444}
+		.butdiv:hover, .entry span:hover, .ticked{background-color:#444;color:white}#menubar{position:fixed;top:0;width: 100%;height:50px;border-bottom:1px solid #444}   #menubar, .pdbox,#selsl { z-index :100;background-color: white}
+        .entry{clear: left;margin-left: 20px} .entry span {margin-right:10px}.entrytext{font-size:20px}#upbutdiv{width:240px;position: relative; right:310px;bottom: -5px}.chkbuted{font-weight: bold}
+.entbut {border:1px solid #444; width: 70px;display:inline-block;text-align: center}#upsec{  height:50px;position: absolute; bottom:5px;right:25px;}#txtsec span{display: block;height:25px} #txtsec{  }#upsecinner{width: 50px}
+#content{margin:70px 0 0 0}.butdiv,#selsl,#messagebox{float:left} #txtsec div{margin-left: 10px} .pdbox{padding:5px;position: relative;top:4px;border-bottom:1px solid #444  }.sb233{position:relative;padding-top: 10px}#selsl{height:50px}#upsecbutdiv .butdiv{width: 30px}#boxes{position: relative;bottom: 25px;right:75px}@-moz-document url-prefix() {#boxes{bottom: 20px}}#upsecbutdiv{position:absolute;right:0px;bottom: -6px}#notibox p,.pdbox,#selsl{display: none}#messagebox {top: 25px;position: relative;height: 10px}
+</style>
+<!--[if IE 8]><style>
+#boxes{position: absolute;top: 31px;right:75px}</style>
+<![endif]-->
+<!--[if lte IE 7]><style>
+#boxes *{margin:0;padding: 0}#boxes{position: relative;bottom: 19px;right:75px;}#txtsec{width: 200px} </style>
+<![endif]-->
+</head><body><div id="menubar"><div id="menucts"><a href="/services/text/"><div class="butdiv">Refresh</div></a><a href="#text"><div class="butdiv">Text</div></a><a href="#file"><div class="butdiv">File</div></a><div class="butdiv batchtog" alt="">Batch</div><div id="selsl"><div class="butdiv" id="adel">Del</div><div class="butdiv batchpick" alt="textdiv" title="true">All Text</div><div class="butdiv batchpick" alt="textdiv" title="false">No Text</div><div class="butdiv batchpick" title="true" alt="filediv">All File</div><div class="butdiv batchpick" title="false" alt="filediv" >No File</div></div><div id="messagebox">sb233</div><div id="upsec"><div id="upbutdiv"><div class="butdiv pdbtggler" alt="notibox">Noti Box</div><div class="butdiv pdbtggler" alt="txtsec">New Text</div><div class="butdiv postsend">Upload</div></div><div id="boxes"><form action="services/file/" target="uplif" method="post" enctype="multipart/form-data">
+<input type="hidden" name="hasfile" value="233"/>
+<input type="file" name="file[]" /> <div class="pdbox" id="upsecinner"></div>
+</form><div class="pdbox" id="txtsec">
+<form id="txtform" action="services/text/" method="post" alt="textdiv">
+<div>
+<textarea name="text" rows=5></textarea>
+</div><div><span>
+<input type="checkbox" name="saveasfile" /></span><span class="chkbut" id="saveasfile">check</span><span class="postsend">Send</span>
+</div>
+</form>
+</div><div class="pdbox" id="notibox"></div></div><div id="upsecbutdiv"><div class="butdiv" id="addfl">+</div><div class="butdiv pdbtggler" alt="upsecinner">&#9660;</div></div></div></div></div><div id="content">
+<a name="text" class="bookmark"></a><div class="sb233" id="textdiv" alt="#id" ></div><a name="file" class="bookmark" alt="file"></a><div class="sb233" id="filediv" alt=".fname"></div></div><iframe name="uplif"/>
+</body></html>
